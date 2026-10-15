@@ -7,6 +7,8 @@ class ApiConstants {
   static const String resendcode =
       "$Api/adminapp/auth/forgetpassword/resendcode.php";
   static const String login = "$Api/adminapp/auth/login.php";
+  static const String rimages = "$Api/image";
+
   ////////////////////////forgetpassword//////////////////////////////
   static const String forgetpasswordlink =
       "$Api/adminapp/auth/forgetpassword/forgetpassword.php";
@@ -39,4 +41,5 @@ class ApiConstants {
   static const String rejectorder = "$Api/adminapp/orders/reject_order.php";
   static const String get_new_orders =
       "$Api/adminapp/orders/get_new_orders.php";
+      
 }

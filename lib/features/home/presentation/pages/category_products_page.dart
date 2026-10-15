@@ -211,7 +211,7 @@ class _ProductCard extends StatelessWidget {
                         ),
                       )
                     : Image.network(
-                        _resolveImage(image),
+                        '${ApiConstants.rimages}/$image',
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const ColoredBox(
                           color: AppColors.primaryPale,
