@@ -9,13 +9,13 @@ class OrdersRemoteDataSource {
 
   Future<Response> getNewOrders() => _api.get(ApiConstants.get_new_orders);
 
-  Future<Response> approveOrder(String orderId, String admin_id) => _api.post(
+  Future<Response> approveOrder(String orderId, String adminId) => _api.post(
     ApiConstants.aproveorder,
-    data: FormData.fromMap({'orders_id': orderId, 'admin_id': admin_id}),
+    data: FormData.fromMap({'orders_id': orderId, 'admin_id': adminId}),
   );
 
-  Future<Response> rejectOrder(String orderId) => _api.post(
+  Future<Response> rejectOrder(String orderId, String adminId) => _api.post(
     ApiConstants.rejectorder,
-    data: FormData.fromMap({'orders_id': orderId}),
+    data: FormData.fromMap({'orders_id': orderId, 'admin_id': adminId}),
   );
 }

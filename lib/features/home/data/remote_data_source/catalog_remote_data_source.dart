@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:adminapp/core/constants/api_client/link_api.dart';
 import 'package:adminapp/core/network/api_consumer.dart';
+import 'package:adminapp/core/services/Mysevice.dart';
 import 'package:dio/dio.dart';
 
 class CatalogRemoteDataSource {
-  CatalogRemoteDataSource(this._api);
+  CatalogRemoteDataSource(this._api, this._myService);
 
   final ApiConsumer _api;
+  final Myservice _myService;
 
   Future<Response> getCategories() => _api.get(
     ApiConstants.getcategory,
@@ -24,14 +26,18 @@ class CatalogRemoteDataSource {
     required String name,
     required String arabicName,
     required File image,
-  }) => _api.post(
-    ApiConstants.addcategory,
-    data: FormData.fromMap({
+  }) async {
+    final values = <String, dynamic>{
       'category_name': name,
       'category_name_ar': arabicName,
-      'category_image': MultipartFile.fromFile(image.path),
-    }),
-  );
+      'category_image': await MultipartFile.fromFile(
+        image.path,
+        filename: image.path.split(Platform.pathSeparator).last,
+      ),
+      'user_id': _requireUserId(),
+    };
+    return _api.post(ApiConstants.addcategory, data: FormData.fromMap(values));
+  }
 
   Future<Response> updateCategory({
     required int id,
@@ -45,14 +51,22 @@ class CatalogRemoteDataSource {
       'category_name_ar': arabicName,
     };
     if (image != null) {
-      values['category_image'] = await MultipartFile.fromFile(image.path);
+      if (!await image.exists()) {
+        throw const FormatException(
+          'The selected category image is unavailable.',
+        );
+      }
+      values['category_image'] = await MultipartFile.fromFile(
+        image.path,
+        filename: image.path.split(Platform.pathSeparator).last,
+      );
     }
     return _api.post(ApiConstants.editcategory, data: FormData.fromMap(values));
   }
 
   Future<Response> deleteCategory(int id) => _api.post(
     ApiConstants.deletecategory,
-    data: FormData.fromMap({'category_id': id}),
+    data: FormData.fromMap({'category_id': id, 'user_id': _requireUserId()}),
   );
 
   Future<Response> addProduct({
@@ -113,17 +127,36 @@ class CatalogRemoteDataSource {
       arabicColor: arabicColor,
       location: location,
       arabicLocation: arabicLocation,
-    )..['items_id'] = id;
+    )..['itemscolor_id'] = id;
     if (image != null) {
-      values['items_image'] = await MultipartFile.fromFile(image.path);
+      if (!await image.exists()) {
+        throw const FormatException(
+          'The selected product image is unavailable.',
+        );
+      }
+      values['items_image'] = await MultipartFile.fromFile(
+        image.path,
+        filename: image.path.split(Platform.pathSeparator).last,
+      );
     }
     return _api.post(ApiConstants.editproduct, data: FormData.fromMap(values));
   }
 
-  Future<Response> deleteProduct(int id) => _api.post(
+  Future<Response> deleteProduct(int variationId) => _api.post(
     ApiConstants.deleteproduct,
-    data: FormData.fromMap({'items_id': id}),
+    data: FormData.fromMap({
+      'itemscolor_id': variationId,
+      'user_id': _requireUserId(),
+    }),
   );
+
+  String _requireUserId() {
+    final userId = _myService.sharedPreferences.getString('user_id');
+    if (userId == null || userId.isEmpty) {
+      throw StateError('You must log in before deleting catalog items.');
+    }
+    return userId;
+  }
 
   Map<String, dynamic> _productValues({
     required int categoryId,
@@ -150,6 +183,11 @@ class CatalogRemoteDataSource {
       'items_colorar': arabicColor,
       'items_location': location,
       'items_locationar': arabicLocation,
+      'namecolor_en': color,
+      'namecolor_ar': arabicColor,
+      'itemscolor_quantity': count,
+      'itemscolor_locationen': location,
+      'itemscolor_locationar': arabicLocation,
     };
   }
 }

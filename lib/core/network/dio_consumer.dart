@@ -1,5 +1,6 @@
 import 'package:adminapp/core/network/network_info.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/api_client/link_api.dart';
 import '../errors/exceptions.dart';
@@ -7,8 +8,11 @@ import 'api_consumer.dart';
 
 class DioConsumer implements ApiConsumer {
   final Dio dio;
+  final SharedPreferences _preferences;
   final NetworkInfo networkInfo = NetworkInfo();
-  DioConsumer(this.dio) {
+  static const _sessionCookieKey = 'admin_session_cookie';
+
+  DioConsumer(this.dio, this._preferences) {
     dio.options.baseUrl = ApiConstants.Api;
 
     dio.options.connectTimeout = const Duration(seconds: 40);
@@ -16,6 +20,73 @@ class DioConsumer implements ApiConsumer {
     dio.options.receiveTimeout = const Duration(seconds: 20);
 
     dio.options.sendTimeout = const Duration(seconds: 20);
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final sessionCookie = _preferences.getString(_sessionCookieKey);
+          if (sessionCookie != null && sessionCookie.isNotEmpty) {
+            options.headers['Cookie'] = sessionCookie;
+          }
+          handler.next(options);
+        },
+        onResponse: (response, handler) async {
+          final setCookieHeaders = response.headers['set-cookie'] ?? const [];
+          if (setCookieHeaders.isNotEmpty) {
+            await _saveSessionCookies(setCookieHeaders);
+          }
+          handler.next(response);
+        },
+      ),
+    );
+  }
+
+  Future<void> _saveSessionCookies(List<String> setCookieHeaders) async {
+    final cookies = <String, String>{};
+    final existingCookie = _preferences.getString(_sessionCookieKey);
+    if (existingCookie != null && existingCookie.isNotEmpty) {
+      for (final cookie in existingCookie.split(';')) {
+        final separator = cookie.indexOf('=');
+        if (separator > 0) {
+          cookies[cookie.substring(0, separator).trim()] = cookie
+              .substring(separator + 1)
+              .trim();
+        }
+      }
+    }
+
+    for (final header in setCookieHeaders) {
+      final parts = header.split(';');
+      final separator = parts.first.indexOf('=');
+      if (separator <= 0) continue;
+
+      final name = parts.first.substring(0, separator).trim();
+      final value = parts.first.substring(separator + 1).trim();
+      final expires = parts.skip(1).any((attribute) {
+        final normalized = attribute.trim().toLowerCase();
+        if (normalized == 'max-age=0') return true;
+        if (!normalized.startsWith('expires=')) return false;
+        final date = DateTime.tryParse(
+          attribute.substring(attribute.indexOf('=') + 1).trim(),
+        );
+        return date != null && !date.isAfter(DateTime.now());
+      });
+
+      if (expires || value.isEmpty) {
+        cookies.remove(name);
+      } else {
+        cookies[name] = value;
+      }
+    }
+
+    if (cookies.isEmpty) {
+      await _preferences.remove(_sessionCookieKey);
+    } else {
+      final cookieHeader = cookies.entries
+          .map((entry) => '${entry.key}=${entry.value}')
+          .join('; ');
+      await _preferences.setString(_sessionCookieKey, cookieHeader);
+    }
   }
 
   @override

@@ -29,6 +29,15 @@ class CategoryProductsPage extends StatelessWidget {
   }
 
   Future<void> _delete(BuildContext context, CatalogProduct product) async {
+    if (product.colorVariantId <= 0) {
+      _showMessage(
+        context,
+        'Cannot delete this product because its variant ID is missing.',
+        isError: true,
+      );
+      return;
+    }
+
     final confirmed = await confirmCatalogDelete(
       context,
       title: 'Delete product',
@@ -36,7 +45,10 @@ class CategoryProductsPage extends StatelessWidget {
     );
     if (!confirmed || !context.mounted) return;
     try {
-      await context.read<CatalogCubit>().deleteProduct(product.id, category.id);
+      await context.read<CatalogCubit>().deleteProduct(
+        product.colorVariantId,
+        category.id,
+      );
       if (context.mounted) _showMessage(context, 'Product deleted.');
     } catch (error) {
       if (context.mounted) {
@@ -156,6 +168,7 @@ class CategoryProductsPage extends StatelessWidget {
                               final product = products[index];
                               return _ProductCard(
                                 product: product,
+                                imageRevision: state.productImageRevision,
                                 onEdit: () => _openForm(context, product),
                                 onDelete: () => _delete(context, product),
                               );
@@ -178,11 +191,13 @@ class CategoryProductsPage extends StatelessWidget {
 class _ProductCard extends StatelessWidget {
   const _ProductCard({
     required this.product,
+    required this.imageRevision,
     required this.onEdit,
     required this.onDelete,
   });
 
   final CatalogProduct product;
+  final int imageRevision;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -211,7 +226,7 @@ class _ProductCard extends StatelessWidget {
                         ),
                       )
                     : Image.network(
-                        '${ApiConstants.rimages}/$image',
+                        _resolveProductImage(image, imageRevision),
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const ColoredBox(
                           color: AppColors.primaryPale,
@@ -351,9 +366,30 @@ class _ProductsErrorView extends StatelessWidget {
   }
 }
 
-String _resolveImage(String path) {
-  if (Uri.tryParse(path)?.hasScheme == true) return path;
-  return '${ApiConstants.Api}/${path.replaceFirst(RegExp(r'^/+'), '')}';
+String _resolveProductImage(String path, int revision) {
+  final imagePath = path.trim();
+  final imageUrl = Uri.tryParse(imagePath)?.hasScheme == true
+      ? imagePath
+      : _resolveRelativeProductImage(imagePath);
+  return Uri.parse(imageUrl)
+      .replace(
+        queryParameters: {
+          ...Uri.parse(imageUrl).queryParameters,
+          'image_revision': '$revision',
+        },
+      )
+      .toString();
+}
+
+String _resolveRelativeProductImage(String path) {
+  final relativePath = path.replaceFirst(RegExp(r'^/+'), '');
+  if (relativePath.startsWith('upload/') || relativePath.startsWith('image/')) {
+    return '${ApiConstants.Api}/$relativePath';
+  }
+  if (relativePath.startsWith('products/')) {
+    return '${ApiConstants.Api}/upload/$relativePath';
+  }
+  return '${ApiConstants.rimages}/$relativePath';
 }
 
 void _showMessage(

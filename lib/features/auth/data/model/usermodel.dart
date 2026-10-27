@@ -17,11 +17,19 @@ class UserModel extends User {
         ? Map<String, dynamic>.from(payload['user'] as Map)
         : payload;
 
-    return UserModel(
-      id: user['user_id'].toString(),
-      name: user['user_name'].toString(),
+    final id = user['user_id'];
+    final name = user['user_name'];
+    final email = user['user_email'];
+    if (id == null || name == null || email == null) {
+      throw const FormatException(
+        'Login response is missing user_id, user_name, or user_email.',
+      );
+    }
 
-      email: user['user_email'].toString(),
+    return UserModel(
+      id: id.toString(),
+      name: name.toString(),
+      email: email.toString(),
       phone: user['user_phone']?.toString(),
       image: user['user_image']?.toString(),
     );

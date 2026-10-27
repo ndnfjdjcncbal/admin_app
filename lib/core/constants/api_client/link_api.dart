@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String Api = "http://20.0.1.241/ecommerceapp";
+  static const String Api = "http://20.0.24.135/ecommerceapp";
   ////////////////////////auth//////////////////////////////
   static const String signupl = "$Api/adminapp/auth/signin.php";
   static const String verifiedcodesignup =
@@ -41,5 +41,4 @@ class ApiConstants {
   static const String rejectorder = "$Api/adminapp/orders/reject_order.php";
   static const String get_new_orders =
       "$Api/adminapp/orders/get_new_orders.php";
-      
 }

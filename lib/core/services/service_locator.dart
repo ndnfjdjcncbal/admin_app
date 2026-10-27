@@ -48,14 +48,16 @@ void initDependencies() {
 
   sl.registerLazySingleton<Dio>(() => Dio());
 
-  sl.registerLazySingleton<DioConsumer>(() => DioConsumer(sl<Dio>()));
+  sl.registerLazySingleton<DioConsumer>(
+    () => DioConsumer(sl<Dio>(), sl<SharedPreferences>()),
+  );
 
   sl.registerLazySingleton<NotificationService>(
     () => NotificationService(sl<Myservice>(), sl<DioConsumer>()),
   );
 
   sl.registerLazySingleton<CatalogRemoteDataSource>(
-    () => CatalogRemoteDataSource(sl<DioConsumer>()),
+    () => CatalogRemoteDataSource(sl<DioConsumer>(), sl<Myservice>()),
   );
 
   sl.registerLazySingleton<OrdersRemoteDataSource>(

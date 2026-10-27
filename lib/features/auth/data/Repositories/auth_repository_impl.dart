@@ -52,9 +52,17 @@ class AuthRepositoryImpl implements AuthRepository {
       } else {
         decoded = responseData;
       }
-    } on FormatException {
+    } on FormatException catch (error) {
+      final responsePreview = responseData is String
+          ? responseData.trim().replaceAll(RegExp(r'\s+'), ' ')
+          : '';
+      final preview = responsePreview.length > 120
+          ? '${responsePreview.substring(0, 120)}...'
+          : responsePreview;
       throw ServerException(
-        'Login API returned invalid JSON. Check the PHP response for warnings or errors.',
+        'Login API returned invalid JSON: ${error.message}. '
+        'Check the login endpoint response for PHP warnings or HTML.'
+        '${preview.isEmpty ? '' : ' Response starts with: $preview'}',
       );
     }
 

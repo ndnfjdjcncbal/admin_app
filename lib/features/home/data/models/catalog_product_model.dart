@@ -20,11 +20,11 @@ class CatalogProductModel extends CatalogProduct {
 
   factory CatalogProductModel.fromJson(Map<String, dynamic> json) {
     return CatalogProductModel(
-      id: _intValue(json, const ['items_id', 'item_id']),
-      name: json['items_name']?.toString() ?? '',
-      arabicName: json['itemname_AR']?.toString() ?? '',
-      price: json['items_price']?.toString() ?? '',
-      categoryId: _intValue(json, const ['items_categort', 'category_id']),
+      id: _intValue(json, const ['items_id', 'item_id', 'id']),
+      name: _stringValue(json, const ['items_name', 'item_name', 'name']),
+      arabicName: _stringValue(json, const ['itemname_AR', 'item_name_ar', 'name_ar']),
+      price: _stringValue(json, const ['items_price', 'price', 'item_price']),
+      categoryId: _intValue(json, const ['items_categort', 'category_id', 'item_category_id']),
       image: _nullableStringValue(json, const [
         'items_image',
         'item_image',
@@ -32,20 +32,14 @@ class CatalogProductModel extends CatalogProduct {
         'image_url',
         'image',
       ]),
-      description: json['items_desc']?.toString() ?? '',
-      arabicDescription: json['items_descAr']?.toString() ?? '',
-      count: _intValue(json, const ['itemscolor_quantity', 'items_count']),
-      color: _stringValue(json, const ['namecolor_en', 'items_color']),
-      arabicColor: _stringValue(json, const ['namecolor_ar', 'items_colorar']),
-      location: _stringValue(json, const [
-        'itemscolor_locationen',
-        'items_location',
-      ]),
-      arabicLocation: _stringValue(json, const [
-        'itemscolor_locationar',
-        'items_locationar',
-      ]),
-      colorVariantId: _intValue(json, const ['itemscolor_id']),
+      description: _stringValue(json, const ['items_desc', 'description', 'item_description']),
+      arabicDescription: _stringValue(json, const ['items_descAr', 'description_ar', 'item_description_ar']),
+      count: _intValue(json, const ['itemscolor_quantity', 'items_count', 'count', 'quantity']),
+      color: _stringValue(json, const ['namecolor_en', 'items_color', 'color', 'item_color']),
+      arabicColor: _stringValue(json, const ['namecolor_ar', 'items_colorar', 'color_ar', 'arabic_color']),
+      location: _stringValue(json, const ['itemscolor_locationen', 'items_location', 'location', 'item_location']),
+      arabicLocation: _stringValue(json, const ['itemscolor_locationar', 'items_locationar', 'location_ar', 'arabic_location']),
+      colorVariantId: _intValue(json, const ['itemscolor_id', 'color_variant_id', 'id']),
     );
   }
 
@@ -90,8 +84,17 @@ class CatalogProductModel extends CatalogProduct {
   static int _intValue(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      final parsed = int.tryParse(value?.toString() ?? '');
+      if (value == null) continue;
+      if (value is num) return value.toInt();
+
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') continue;
+
+      final parsed = int.tryParse(text);
       if (parsed != null) return parsed;
+
+      final number = num.tryParse(text);
+      if (number != null) return number.toInt();
     }
     return 0;
   }
@@ -99,7 +102,11 @@ class CatalogProductModel extends CatalogProduct {
   static String _stringValue(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      if (value != null) return value.toString();
+      if (value == null) continue;
+
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') continue;
+      return text;
     }
     return '';
   }
@@ -109,8 +116,12 @@ class CatalogProductModel extends CatalogProduct {
     List<String> keys,
   ) {
     for (final key in keys) {
-      final value = json[key]?.toString().trim();
-      if (value != null && value.isNotEmpty) return value;
+      final value = json[key];
+      if (value == null) continue;
+
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') continue;
+      return text;
     }
     return null;
   }

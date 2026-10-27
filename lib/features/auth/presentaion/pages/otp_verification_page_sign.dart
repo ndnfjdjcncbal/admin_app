@@ -135,12 +135,9 @@ class _SignupVerificationPageState extends State<SignupVerificationPage> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.login,
-                        (route) => false,
-                      );
+                      Navigator.of(
+                        sheetContext,
+                      ).popUntil(ModalRoute.withName(AppRoutes.login));
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,

@@ -7,6 +7,8 @@ class CatalogState {
     this.categoriesLoading = false,
     this.productsLoading = false,
     this.operationLoading = false,
+    this.categoryImageRevision = 0,
+    this.productImageRevision = 0,
     this.categoriesError,
     this.productsError,
   });
@@ -16,6 +18,8 @@ class CatalogState {
   final bool categoriesLoading;
   final bool productsLoading;
   final bool operationLoading;
+  final int categoryImageRevision;
+  final int productImageRevision;
   final String? categoriesError;
   final String? productsError;
 
@@ -25,6 +29,8 @@ class CatalogState {
     bool? categoriesLoading,
     bool? productsLoading,
     bool? operationLoading,
+    int? categoryImageRevision,
+    int? productImageRevision,
     String? categoriesError,
     String? productsError,
     bool clearCategoriesError = false,
@@ -36,11 +42,15 @@ class CatalogState {
       categoriesLoading: categoriesLoading ?? this.categoriesLoading,
       productsLoading: productsLoading ?? this.productsLoading,
       operationLoading: operationLoading ?? this.operationLoading,
+      categoryImageRevision:
+          categoryImageRevision ?? this.categoryImageRevision,
+      productImageRevision: productImageRevision ?? this.productImageRevision,
       categoriesError: clearCategoriesError
           ? null
           : categoriesError ?? this.categoriesError,
-      productsError:
-          clearProductsError ? null : productsError ?? this.productsError,
+      productsError: clearProductsError
+          ? null
+          : productsError ?? this.productsError,
     );
   }
 }

@@ -168,218 +168,257 @@ Future<bool> showProductForm(
   required int categoryId,
   CatalogProduct? product,
 }) async {
-  final fields = <String, TextEditingController>{
-    'name': TextEditingController(text: product?.name),
-    'arabicName': TextEditingController(text: product?.arabicName),
-    'price': TextEditingController(text: product?.price),
-    'description': TextEditingController(text: product?.description),
-    'arabicDescription': TextEditingController(
-      text: product?.arabicDescription,
-    ),
-    'count': TextEditingController(text: product?.count.toString() ?? '0'),
-    'color': TextEditingController(text: product?.color),
-    'arabicColor': TextEditingController(text: product?.arabicColor),
-    'location': TextEditingController(text: product?.location),
-    'arabicLocation': TextEditingController(text: product?.arabicLocation),
-  };
-  File? image;
-  final formKey = GlobalKey<FormState>();
-  var saving = false;
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: AlertDialog(
-          title: Text(product == null ? 'Add product' : 'Edit product'),
-          content: SizedBox(
-            width: 480,
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _FormField(
-                      controller: fields['arabicName']!,
-                      label: 'Product name (Arabic)',
-                      required: true,
+  return await showDialog<bool>(
+        context: context,
+        builder: (_) => _ProductFormDialog(
+          cubit: cubit,
+          categoryId: categoryId,
+          product: product,
+        ),
+      ) ??
+      false;
+}
+
+class _ProductFormDialog extends StatefulWidget {
+  const _ProductFormDialog({
+    required this.cubit,
+    required this.categoryId,
+    this.product,
+  });
+
+  final CatalogCubit cubit;
+  final int categoryId;
+  final CatalogProduct? product;
+
+  @override
+  State<_ProductFormDialog> createState() => _ProductFormDialogState();
+}
+
+class _ProductFormDialogState extends State<_ProductFormDialog> {
+  late final Map<String, TextEditingController> _fields;
+  final _formKey = GlobalKey<FormState>();
+  File? _image;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final product = widget.product;
+    _fields = {
+      'name': TextEditingController(text: product?.name),
+      'arabicName': TextEditingController(text: product?.arabicName),
+      'price': TextEditingController(text: product?.price),
+      'description': TextEditingController(text: product?.description),
+      'arabicDescription': TextEditingController(
+        text: product?.arabicDescription,
+      ),
+      'count': TextEditingController(text: product?.count.toString() ?? '0'),
+      'color': TextEditingController(text: product?.color),
+      'arabicColor': TextEditingController(text: product?.arabicColor),
+      'location': TextEditingController(text: product?.location),
+      'arabicLocation': TextEditingController(text: product?.arabicLocation),
+    };
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _fields.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+    );
+    if (picked != null && mounted) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
+  Future<void> _save() async {
+    final product = widget.product;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (product == null && _image == null) return;
+
+    final count = int.tryParse(_fields['count']!.text.trim());
+    if (count == null || count < 0) {
+      _showFormError(context, 'Enter a valid quantity of zero or more.');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final values = {
+        'name': _fields['name']!.text.trim(),
+        'arabicName': _fields['arabicName']!.text.trim(),
+        'price': _fields['price']!.text.trim(),
+        'description': _fields['description']!.text.trim(),
+        'arabicDescription': _fields['arabicDescription']!.text.trim(),
+        'color': _fields['color']!.text.trim(),
+        'arabicColor': _fields['arabicColor']!.text.trim(),
+        'location': _fields['location']!.text.trim(),
+        'arabicLocation': _fields['arabicLocation']!.text.trim(),
+      };
+
+      if (product == null) {
+        await widget.cubit.addProduct(
+          categoryId: widget.categoryId,
+          name: values['name']!,
+          arabicName: values['arabicName']!,
+          price: values['price']!,
+          description: values['description']!,
+          arabicDescription: values['arabicDescription']!,
+          count: count,
+          color: values['color']!,
+          arabicColor: values['arabicColor']!,
+          location: values['location']!,
+          arabicLocation: values['arabicLocation']!,
+          image: _image!,
+        );
+      } else {
+        await widget.cubit.updateProduct(
+          id: product.colorVariantId,
+          categoryId: widget.categoryId,
+          name: values['name']!,
+          arabicName: values['arabicName']!,
+          price: values['price']!,
+          description: values['description']!,
+          arabicDescription: values['arabicDescription']!,
+          count: count,
+          color: values['color']!,
+          arabicColor: values['arabicColor']!,
+          location: values['location']!,
+          arabicLocation: values['arabicLocation']!,
+          image: _image,
+        );
+      }
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saving = false);
+        _showFormError(context, error);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: AlertDialog(
+        title: Text(product == null ? 'Add product' : 'Edit product'),
+        content: SizedBox(
+          width: 480,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FormField(
+                    controller: _fields['arabicName']!,
+                    label: 'Product name (Arabic)',
+                    required: true,
+                  ),
+                  _FormField(
+                    controller: _fields['name']!,
+                    label: 'Product name (English)',
+                    required: true,
+                  ),
+                  _FormField(
+                    controller: _fields['price']!,
+                    label: 'Price',
+                    required: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
-                    _FormField(
-                      controller: fields['name']!,
-                      label: 'Product name (English)',
-                      required: true,
+                    validator: (value) {
+                      final price = num.tryParse(value?.trim() ?? '');
+                      return price == null || price <= 0
+                          ? 'Enter a valid price greater than zero.'
+                          : null;
+                    },
+                  ),
+                  _FormField(
+                    controller: _fields['count']!,
+                    label: 'Stock quantity',
+                    keyboardType: TextInputType.number,
+                  ),
+                  _FormField(
+                    controller: _fields['arabicDescription']!,
+                    label: 'Description (Arabic)',
+                    maxLines: 2,
+                  ),
+                  _FormField(
+                    controller: _fields['description']!,
+                    label: 'Description (English)',
+                    maxLines: 2,
+                  ),
+                  _FormField(
+                    controller: _fields['arabicColor']!,
+                    label: 'Color (Arabic)',
+                  ),
+                  _FormField(
+                    controller: _fields['color']!,
+                    label: 'Color (English)',
+                  ),
+                  _FormField(
+                    controller: _fields['arabicLocation']!,
+                    label: 'Location (Arabic)',
+                  ),
+                  _FormField(
+                    controller: _fields['location']!,
+                    label: 'Location (English)',
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: Text(
+                      _image == null
+                          ? (product == null
+                                ? 'Choose product image'
+                                : 'Change product image (optional)')
+                          : 'Image selected',
                     ),
-                    _FormField(
-                      controller: fields['price']!,
-                      label: 'Price',
-                      required: true,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                  ),
+                  if (product == null && _image == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'A product image is required.',
+                        style: TextStyle(color: Colors.red),
                       ),
-                      validator: (value) {
-                        final price = num.tryParse(value?.trim() ?? '');
-                        return price == null || price <= 0
-                            ? 'Enter a valid price greater than zero.'
-                            : null;
-                      },
                     ),
-                    _FormField(
-                      controller: fields['count']!,
-                      label: 'Stock quantity',
-                      keyboardType: TextInputType.number,
-                    ),
-                    _FormField(
-                      controller: fields['arabicDescription']!,
-                      label: 'Description (Arabic)',
-                      maxLines: 2,
-                    ),
-                    _FormField(
-                      controller: fields['description']!,
-                      label: 'Description (English)',
-                      maxLines: 2,
-                    ),
-                    _FormField(
-                      controller: fields['arabicColor']!,
-                      label: 'Color (Arabic)',
-                    ),
-                    _FormField(
-                      controller: fields['color']!,
-                      label: 'Color (English)',
-                    ),
-                    _FormField(
-                      controller: fields['arabicLocation']!,
-                      label: 'Location (Arabic)',
-                    ),
-                    _FormField(
-                      controller: fields['location']!,
-                      label: 'Location (English)',
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await ImagePicker().pickImage(
-                          source: ImageSource.gallery,
-                          imageQuality: 82,
-                        );
-                        if (picked != null) {
-                          setState(() => image = File(picked.path));
-                        }
-                      },
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: Text(
-                        image == null
-                            ? (product == null
-                                  ? 'Choose product image'
-                                  : 'Change product image (optional)')
-                            : 'Image selected',
-                      ),
-                    ),
-                    if (product == null && image == null)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'A product image is required.',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: saving ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: saving
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      if (product == null && image == null) return;
-                      final count = int.tryParse(fields['count']!.text.trim());
-                      if (count == null || count < 0) {
-                        _showFormError(
-                          dialogContext,
-                          'Enter a valid quantity of zero or more.',
-                        );
-                        return;
-                      }
-                      setState(() => saving = true);
-                      try {
-                        final name = fields['name']!.text.trim();
-                        final arabicName = fields['arabicName']!.text.trim();
-                        final price = fields['price']!.text.trim();
-                        final description = fields['description']!.text.trim();
-                        final arabicDescription = fields['arabicDescription']!
-                            .text
-                            .trim();
-                        final color = fields['color']!.text.trim();
-                        final arabicColor = fields['arabicColor']!.text.trim();
-                        final location = fields['location']!.text.trim();
-                        final arabicLocation = fields['arabicLocation']!.text
-                            .trim();
-                        if (product == null) {
-                          await cubit.addProduct(
-                            categoryId: categoryId,
-                            name: name,
-                            arabicName: arabicName,
-                            price: price,
-                            description: description,
-                            arabicDescription: arabicDescription,
-                            count: count,
-                            color: color,
-                            arabicColor: arabicColor,
-                            location: location,
-                            arabicLocation: arabicLocation,
-                            image: image!,
-                          );
-                        } else {
-                          await cubit.updateProduct(
-                            id: product.id,
-                            categoryId: categoryId,
-                            name: name,
-                            arabicName: arabicName,
-                            price: price,
-                            description: description,
-                            arabicDescription: arabicDescription,
-                            count: count,
-                            color: color,
-                            arabicColor: arabicColor,
-                            location: location,
-                            arabicLocation: arabicLocation,
-                            image: image,
-                          );
-                        }
-                        if (dialogContext.mounted) {
-                          Navigator.pop(dialogContext, true);
-                        }
-                      } catch (error) {
-                        if (dialogContext.mounted) {
-                          setState(() => saving = false);
-                          _showFormError(dialogContext, error);
-                        }
-                      }
-                    },
-              child: saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(product == null ? 'Add' : 'Save changes'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(product == null ? 'Add' : 'Save changes'),
+          ),
+        ],
       ),
-    ),
-  );
-  for (final controller in fields.values) {
-    controller.dispose();
+    );
   }
-  return result ?? false;
 }
 
 Future<bool> confirmCatalogDelete(

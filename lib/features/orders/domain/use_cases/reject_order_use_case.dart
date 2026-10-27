@@ -5,5 +5,6 @@ class RejectOrderUseCase {
 
   final OrdersRepository _repository;
 
-  Future<void> call(String orderId) => _repository.rejectOrder(orderId);
+  Future<void> call(String orderId, String adminId) =>
+      _repository.rejectOrder(orderId, adminId);
 }

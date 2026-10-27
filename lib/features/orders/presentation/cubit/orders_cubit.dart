@@ -26,15 +26,15 @@ class OrdersCubit extends Cubit<OrdersState> {
     }
   }
 
-  Future<void> approve(String orderId, String admin_id) => _runOrderAction(
+  Future<void> approve(String orderId, String adminId) => _runOrderAction(
     orderId,
-    () => _approveOrder(orderId, admin_id),
+    () => _approveOrder(orderId, adminId),
     'Order approved successfully.',
   );
 
-  Future<void> reject(String orderId) => _runOrderAction(
+  Future<void> reject(String orderId, String adminId) => _runOrderAction(
     orderId,
-    () => _rejectOrder(orderId),
+    () => _rejectOrder(orderId, adminId),
     'Order rejected successfully.',
   );
 

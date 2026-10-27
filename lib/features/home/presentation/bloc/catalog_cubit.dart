@@ -6,17 +6,17 @@ import '../../domain/repositories/catalog_repository.dart';
 import 'catalog_state.dart';
 
 class CatalogCubit extends Cubit<CatalogState> {
-  CatalogCubit(this._repository) : super(const CatalogState());
+  CatalogCubit(this._repository)
+    : super(
+        CatalogState(
+          productImageRevision: DateTime.now().microsecondsSinceEpoch,
+        ),
+      );
 
   final CatalogRepository _repository;
 
   Future<void> loadCategories() async {
-    emit(
-      state.copyWith(
-        categoriesLoading: true,
-        clearCategoriesError: true,
-      ),
-    );
+    emit(state.copyWith(categoriesLoading: true, clearCategoriesError: true));
     try {
       final categories = await _repository.getCategories();
       emit(state.copyWith(categories: categories, categoriesLoading: false));
@@ -31,21 +31,13 @@ class CatalogCubit extends Cubit<CatalogState> {
   }
 
   Future<void> loadProducts(int categoryId) async {
-    emit(
-      state.copyWith(
-        productsLoading: true,
-        clearProductsError: true,
-      ),
-    );
+    emit(state.copyWith(productsLoading: true, clearProductsError: true));
     try {
       final products = await _repository.getProducts(categoryId);
       emit(state.copyWith(products: products, productsLoading: false));
     } catch (error) {
       emit(
-        state.copyWith(
-          productsLoading: false,
-          productsError: error.toString(),
-        ),
+        state.copyWith(productsLoading: false, productsError: error.toString()),
       );
     }
   }
@@ -62,6 +54,9 @@ class CatalogCubit extends Cubit<CatalogState> {
         image: image,
       );
       await loadCategories();
+      emit(
+        state.copyWith(categoryImageRevision: state.categoryImageRevision + 1),
+      );
     });
   }
 
@@ -79,6 +74,13 @@ class CatalogCubit extends Cubit<CatalogState> {
         image: image,
       );
       await loadCategories();
+      if (image != null) {
+        emit(
+          state.copyWith(
+            categoryImageRevision: state.categoryImageRevision + 1,
+          ),
+        );
+      }
     });
   }
 
@@ -154,6 +156,11 @@ class CatalogCubit extends Cubit<CatalogState> {
         image: image,
       );
       await loadProducts(categoryId);
+      if (image != null) {
+        emit(
+          state.copyWith(productImageRevision: state.productImageRevision + 1),
+        );
+      }
     });
   }
 

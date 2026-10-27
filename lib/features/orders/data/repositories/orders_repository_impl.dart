@@ -18,13 +18,13 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<void> approveOrder(String orderId, String admin_id) async {
-    await _remoteDataSource.approveOrder(orderId, admin_id);
+  Future<void> approveOrder(String orderId, String adminId) async {
+    await _remoteDataSource.approveOrder(orderId, adminId);
   }
 
   @override
-  Future<void> rejectOrder(String orderId) async {
-    await _remoteDataSource.rejectOrder(orderId);
+  Future<void> rejectOrder(String orderId, String adminId) async {
+    await _remoteDataSource.rejectOrder(orderId, adminId);
   }
 
   List<Map<String, dynamic>> _ordersPayload(dynamic response) {

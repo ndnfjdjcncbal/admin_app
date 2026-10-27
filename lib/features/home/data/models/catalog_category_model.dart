@@ -11,11 +11,11 @@ class CatalogCategoryModel extends CatalogCategory {
 
   factory CatalogCategoryModel.fromJson(Map<String, dynamic> json) {
     return CatalogCategoryModel(
-      id: int.tryParse(json['category_id']?.toString() ?? '') ?? 0,
-      name: json['category_name']?.toString() ?? '',
-      arabicName: json['category_name_ar']?.toString() ?? '',
-      image: json['category_image']?.toString(),
-      datetime: '${json['category_datetime']?.toString() ?? ''}',
+      id: _intValue(json, const ['category_id', 'id']),
+      name: _stringValue(json, const ['category_name', 'name', 'category_name_en']),
+      arabicName: _stringValue(json, const ['category_name_ar', 'name_ar']),
+      image: _imageValue(json),
+      datetime: _stringValue(json, const ['category_datetime', 'created_at', 'date']),
     );
   }
 
@@ -37,5 +37,43 @@ class CatalogCategoryModel extends CatalogCategory {
       arabicName: arabicName,
       image: image,
     );
+  }
+
+  static int _intValue(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      if (value is num) return value.toInt();
+
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') continue;
+
+      final parsed = int.tryParse(text);
+      if (parsed != null) return parsed;
+    }
+    return 0;
+  }
+
+  static String _stringValue(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') continue;
+      return text;
+    }
+    return '';
+  }
+
+  static String? _imageValue(Map<String, dynamic> json) {
+    for (final key in const ['category_image', 'image_url', 'image']) {
+      final value = json[key];
+      if (value == null) continue;
+
+      final trimmed = value.toString().trim();
+      if (trimmed.isNotEmpty && trimmed.toLowerCase() != 'null') return trimmed;
+    }
+    return null;
   }
 }

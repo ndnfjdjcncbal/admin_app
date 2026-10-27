@@ -262,6 +262,7 @@ class CategoriesPage extends StatelessWidget {
                           final category = state.categories[index];
                           return _CategoryCard(
                             category: category,
+                            imageRevision: state.categoryImageRevision,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -295,12 +296,14 @@ class CategoriesPage extends StatelessWidget {
 class _CategoryCard extends StatelessWidget {
   const _CategoryCard({
     required this.category,
+    required this.imageRevision,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
 
   final CatalogCategory category;
+  final int imageRevision;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -332,7 +335,7 @@ class _CategoryCard extends StatelessWidget {
                           ),
                         )
                       : Image.network(
-                          _resolveImage(image),
+                            _resolveCategoryImage(image, imageRevision),
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const ColoredBox(
                             color: AppColors.primaryPale,
@@ -641,8 +644,42 @@ ImageProvider<Object>? _imageProvider(String? path) {
 }
 
 String _resolveImage(String path) {
-  if (Uri.tryParse(path)?.hasScheme == true) return path;
-  return '${ApiConstants.Api}/${path.replaceFirst(RegExp(r'^/+'), '')}';
+  final imagePath = path.trim();
+  if (Uri.tryParse(imagePath)?.hasScheme == true) return imagePath;
+  final relativePath = imagePath.replaceFirst(RegExp(r'^/+'), '');
+  if (relativePath.startsWith('upload/')) {
+    return '${ApiConstants.Api}/$relativePath';
+  }
+  return '${ApiConstants.rimages}/$relativePath';
+}
+
+String _resolveCategoryImage(String path, int revision) {
+  final imagePath = path.trim();
+  final imageUrl = Uri.tryParse(imagePath)?.hasScheme == true
+      ? imagePath
+      : _resolveRelativeCategoryImage(imagePath);
+  return Uri.parse(imageUrl)
+      .replace(
+        queryParameters: {
+          ...Uri.parse(imageUrl).queryParameters,
+          'image_revision': '$revision',
+        },
+      )
+      .toString();
+}
+
+String _resolveRelativeCategoryImage(String path) {
+  final relativePath = path.replaceFirst(RegExp(r'^/+'), '');
+  if (relativePath.startsWith('upload/')) {
+    return '${ApiConstants.Api}/$relativePath';
+  }
+  if (relativePath.startsWith('image/')) {
+    return '${ApiConstants.Api}/$relativePath';
+  }
+  if (relativePath.startsWith('categories/')) {
+    return '${ApiConstants.Api}/upload/$relativePath';
+  }
+  return '${ApiConstants.rimages}/$relativePath';
 }
 
 void _showMessage(

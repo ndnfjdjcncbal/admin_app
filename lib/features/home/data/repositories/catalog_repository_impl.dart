@@ -142,11 +142,7 @@ class CatalogRepositoryImpl implements CatalogRepository {
       decoded = jsonDecode(json);
     }
 
-    final payload = decoded is List
-        ? decoded
-        : decoded is Map
-        ? decoded['data']
-        : null;
+    final payload = _extractList(decoded);
     if (payload is! List) {
       throw const FormatException('The server response is invalid.');
     }
@@ -158,5 +154,26 @@ class CatalogRepositoryImpl implements CatalogRepository {
       }
       return Map<String, dynamic>.from(item);
     }).toList();
+  }
+
+  dynamic _extractList(dynamic decoded) {
+    if (decoded is List) return decoded;
+    if (decoded is! Map) return null;
+
+    final data = decoded['data'];
+    if (data is List) return data;
+    if (data is Map) {
+      for (final key in const ['items', 'categories', 'products', 'results']) {
+        final value = data[key];
+        if (value is List) return value;
+      }
+    }
+
+    for (final key in const ['items', 'categories', 'products', 'results']) {
+      final value = decoded[key];
+      if (value is List) return value;
+    }
+
+    return data;
   }
 }

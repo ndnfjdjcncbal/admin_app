@@ -150,7 +150,7 @@ class _OrderCard extends StatelessWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      await context.read<OrdersCubit>().reject(order.id);
+      await context.read<OrdersCubit>().reject(order.id, adminId);
     }
   }
 
@@ -297,7 +297,9 @@ class _OrderCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: actionsDisabled ? null : () => _reject(context),
+                    onPressed: actionsDisabled || adminId.isEmpty
+                        ? null
+                        : () => _reject(context),
                     icon: const Icon(Icons.close_rounded),
                     label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
